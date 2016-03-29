@@ -5,18 +5,13 @@ server {
   root <%= @document_root %>;
 
   index index.php;
+
   access_log /var/log/nginx/<%= "#{@name}-access.log" %>;
   error_log  /var/log/nginx/<%= "#{@name}-error.log"  %>;
-
-  if (-f $document_root/mantenimiento.html) {
-    rewrite ^(.*)$  /mantenimiento.html last;
-    break ;
-  }
 
   location / {
     try_files $uri $uri/ /index.php$uri?$args;
   }
-
 
   location ~* \.(ico|css|gif|jpe?g|png|js|ico|txt|xml)(\?[0-9]+)?$ {
     access_log off;
@@ -49,14 +44,6 @@ server {
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     fastcgi_param SERVER_PORT $http_x_forwarded_port;
     fastcgi_pass unix:<%= @socket %>;
-  }
-
-  location ~ ^/fpm_(status|ping)$ {
-    access_log off;
-    allow 127.0.0.1;
-    deny all;
-    include fastcgi_params;
-    fastcgi_pass unix:/opt/applications/choique_biblioteca_teatral/var/run/app.sock;
   }
 
 }
