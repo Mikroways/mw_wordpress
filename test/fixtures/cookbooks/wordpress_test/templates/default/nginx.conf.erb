@@ -1,0 +1,62 @@
+server {
+  listen <%= @port || 80 %>;
+  server_name <%= Array(@server_name).join(" ")%>;
+
+  root <%= @document_root %>;
+
+  index index.php;
+  access_log /var/log/nginx/<%= "#{@name}-access.log" %>;
+  error_log  /var/log/nginx/<%= "#{@name}-error.log"  %>;
+
+  if (-f $document_root/mantenimiento.html) {
+    rewrite ^(.*)$  /mantenimiento.html last;
+    break ;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.php$uri?$args;
+  }
+
+
+  location ~* \.(ico|css|gif|jpe?g|png|js|ico|txt|xml)(\?[0-9]+)?$ {
+    access_log off;
+    log_not_found off;
+    expires max;
+    break ;
+  }
+
+  location = /robots.txt {
+    allow all;
+    log_not_found off;
+    access_log off;
+  }
+
+  location ~ /\. {
+    deny all;
+  }
+
+  location ~* /(?:uploads|files)/.*\.php$ {
+    deny all;
+  }
+
+  location ~ [^/]\.php(/|$) {
+    fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+    if (!-f $document_root$fastcgi_script_name) {
+      return 404;
+    }
+    include fastcgi_params;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_param SERVER_PORT $http_x_forwarded_port;
+    fastcgi_pass unix:<%= @socket %>;
+  }
+
+  location ~ ^/fpm_(status|ping)$ {
+    access_log off;
+    allow 127.0.0.1;
+    deny all;
+    include fastcgi_params;
+    fastcgi_pass unix:/opt/applications/choique_biblioteca_teatral/var/run/app.sock;
+  }
+
+}
